@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICU-PREDICT Central Station</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true"></span>
+      <div>
+        <div class="brand-name">ICU-PREDICT</div>
+        <div class="brand-sub">Central station · 6-hour early warning</div>
+      </div>
+    </div>
+
+    <div class="sim" role="group" aria-label="Simulation clock">
+      <button class="icon-btn" id="stepBack" aria-label="Back one hour" title="Back one hour">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <button class="play-btn" id="playBtn" aria-pressed="false">
+        <svg viewBox="0 0 24 24" class="i-play" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <svg viewBox="0 0 24 24" class="i-pause" aria-hidden="true"><path d="M7 5h4v14H7zM13 5h4v14h-4z"/></svg>
+        <span id="playLabel">Play</span>
+      </button>
+      <button class="icon-btn" id="stepFwd" aria-label="Forward one hour" title="Forward one hour">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+      </button>
+      <div class="sim-clock">
+        <span class="live-dot" id="liveDot" aria-hidden="true"></span>
+        <span id="simLabel">Simulation hour 0</span>
+      </div>
+      <label class="speed">
+        <span>1 h every</span>
+        <select id="speed">
+          <option value="1500">1.5 s</option>
+          <option value="3000" selected>3 s</option>
+          <option value="6000">6 s</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="top-right">
+      <label class="switch">
+        <input type="checkbox" id="reveal">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Show what happened next</span>
+      </label>
+      <span class="proto" title="Not a medical device">Research prototype</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <aside class="board" aria-label="Monitored beds">
+      <div class="board-head">
+        <h2>Beds</h2>
+        <span id="bedCount" class="muted"></span>
+      </div>
+      <div class="board-summary" id="boardSummary"></div>
+      <div class="beds" id="beds">
+        <p class="loading">Scoring every bed's history. This takes a few seconds on first load.</p>
+      </div>
+    </aside>
+
+    <section class="detail" id="detail" aria-live="polite">
+      <div class="empty">
+        <svg viewBox="0 0 120 40" aria-hidden="true" class="ecg"><path d="M0 22h30l6-10 6 22 6-30 6 18h10l4-4 4 4h48"/></svg>
+        <p>Select a bed to see its 6-hour outlook.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot" id="foot">
+    Predictions are from a research model and must not be used for patient care.
+  </footer>
+
+  <template id="detailTpl">
+    <div class="pt-head">
+      <div>
+        <h1 class="pt-bed"></h1>
+        <p class="pt-line"></p>
+      </div>
+      <div class="pt-actions">
+        <div class="dl-wrap">
+          <button class="ghost-btn" id="dlBtn" aria-haspopup="true" aria-expanded="false">Download report ▾</button>
+          <div class="dl-menu" id="dlMenu" hidden>
+            <a href="#" id="dlPdf">PDF report</a>
+            <a href="#" id="dlCsv">Data (CSV)</a>
+          </div>
+        </div>
+        <button class="ghost-btn" id="printBtn">Print summary</button>
+      </div>
+    </div>
+    <div class="alarm-banner"></div>
+
+    <div class="numerics"></div>
+
+    <div class="row two">
+      <div class="panel risk-panel">
+        <h3>Deterioration risk, next 6 hours</h3>
+        <div class="risk-main">
+          <div class="risk-num"></div>
+          <div class="risk-context"></div>
+        </div>
+        <div class="chart-wrap small"><canvas id="riskChart" aria-label="Risk over the stay" role="img"></canvas></div>
+      </div>
+      <div class="panel drivers-panel">
+        <h3>Why the model gives this risk</h3>
+        <ul class="drivers"></ul>
+        <p class="drivers-note muted"></p>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Next 6 hours, hour by hour</h3>
+        <span class="muted">Most likely value, with the range it lands in 8 times out of 10</span>
+      </div>
+      <div class="strip"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>Vital trends and forecast</h3>
+        <span class="legend">
+          <span><i class="lg-line"></i>Recorded</span>
+          <span><i class="lg-fan"></i>Forecast and 80% range</span>
+          <span><i class="lg-danger"></i>Danger line</span>
+          <span class="lg-actual-wrap"><i class="lg-actual"></i>What happened</span>
+        </span>
+      </div>
+      <div class="charts"></div>
+    </div>
+
+    <details class="panel report" open>
+      <summary><h3>Clinical summary</h3><span class="muted">Full written report, printable</span></summary>
+      <div class="report-body" id="report"></div>
+    </details>
+  </template>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

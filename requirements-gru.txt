@@ -1,0 +1,2 @@
+# Optional: GRU sequence-model benchmark
+torch>=2.2

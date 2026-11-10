@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ICU Patient Monitoring Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+  <div class="frame">
+    <header class="head">
+      <h1>ICU Patient Monitoring Dashboard</h1>
+      <div class="head-right">
+        <span class="refreshed" id="refreshed">Loading…</span>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="icon-btn" id="refreshBtn" title="Refresh data" aria-label="Refresh data">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 0 0-14.3-4.9L4 8M4 4v4h4M4 13a8 8 0 0 0 14.3 4.9L20 16m0 4v-4h-4"/></svg>
+        </button>
+        <span class="sep" aria-hidden="true"></span>
+        <div class="menu-wrap">
+          <button class="icon-btn" id="menuBtn" aria-haspopup="true" aria-expanded="false" aria-label="More options">
+            <svg viewBox="0 0 24 24" aria-hidden="true" class="dots"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>
+          </button>
+          <div class="menu" id="menu" role="menu" hidden>
+            <a role="menuitem" href="#" id="mPdf">Download report (PDF)</a>
+            <a role="menuitem" href="#" id="mCsv">Download data (CSV)</a>
+            <a role="menuitem" href="#" id="mPng">Download charts (PNG)</a>
+            <hr>
+            <label class="menu-check"><input type="checkbox" id="reveal"> Show what happened next</label>
+            <hr>
+            <a role="menuitem" href="/">Open ward view</a>
+            <a role="menuitem" href="/docs" target="_blank" rel="noopener">API documentation</a>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="body">
+      <section class="top">
+        <div class="tiles">
+          <div class="card tile picker">
+            <label for="patientSel">Patient ID</label>
+            <select id="patientSel"></select>
+            <div class="hour-row">
+              <label for="hourInput">ICU hour</label>
+              <div class="stepper">
+                <button id="hourDown" aria-label="Previous hour">−</button>
+                <input id="hourInput" type="number" min="3" value="24" inputmode="numeric">
+                <button id="hourUp" aria-label="Next hour">+</button>
+              </div>
+              <span class="muted" id="hourMax"></span>
+            </div>
+          </div>
+          <div id="tileSlots" class="tile-slots"></div>
+        </div>
+
+        <div class="card gauge-card">
+          <h2 id="bpTitle">Blood pressure</h2>
+          <p class="status" id="bpStatus"></p>
+          <div class="gauges">
+            <figure><figcaption>Systolic</figcaption><div id="gSys"></div></figure>
+            <figure><figcaption>Diastolic</figcaption><div id="gDia"></div></figure>
+          </div>
+        </div>
+
+        <div class="card gauge-card risk-card">
+          <h2>Deterioration risk, next 6 hours</h2>
+          <p class="status" id="riskStatus"></p>
+          <div id="gRisk"></div>
+          <p class="risk-sub" id="riskSub"></p>
+        </div>
+      </section>
+
+      <div class="banner" id="banner" hidden></div>
+
+      <section class="charts">
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div>
+              <h2 id="lineTitle">Heart rate: last 24 hours and next 6 hours</h2>
+              <p class="pid" id="pid1"></p>
+            </div>
+            <button class="icon-btn small" data-png="lineChart" aria-label="Download this chart as PNG" title="Download PNG">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            </button>
+          </div>
+          <div class="tabs" role="tablist" id="vitalTabs"></div>
+          <div class="legend" id="lineLegend"></div>
+          <div class="canvas-box"><canvas id="lineChart" role="img" aria-label="Vital sign history and forecast"></canvas></div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="chart-head">
+            <div>
+              <h2>Deterioration risk by hour: last 24 hours</h2>
+              <p class="pid" id="pid2"></p>
+            </div>
+            <button class="icon-btn small" data-png="riskChart" aria-label="Download this chart as PNG" title="Download PNG">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+            </button>
+          </div>
+          <div class="legend">
+            <span><i class="sw teal"></i>Risk at that hour</span>
+            <span><i class="sw line"></i>Alert threshold</span>
+          </div>
+          <div class="canvas-box"><canvas id="riskChart" role="img" aria-label="Risk by hour"></canvas></div>
+        </div>
+      </section>
+
+      <section class="card report" id="reportCard">
+        <div class="report-head">
+          <div>
+            <h2>Report summary</h2>
+            <p class="pid" id="pid3"></p>
+          </div>
+          <div class="report-actions">
+            <a class="btn primary" id="pdfBtn" href="#" download>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+              Download PDF
+            </a>
+            <button class="btn" id="csvBtn">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14"/></svg>
+              Download CSV
+            </button>
+          </div>
+        </div>
+        <p class="lede" id="lede"></p>
+        <div class="report-grid">
+          <div class="report-col" id="reportLeft"></div>
+          <div class="report-col">
+            <h3>Next 6 hours, hour by hour</h3>
+            <p class="muted small">Most likely value, with the range it lands in 8 times out of 10.</p>
+            <div class="table-wrap"><table class="hourly" id="hourly"></table></div>
+            <div id="reportRight"></div>
+          </div>
+        </div>
+      </section>
+
+      <p class="foot">Research prototype trained on MIMIC-IV-format data; not for patient care. De-identified data from the
+        MIMIC-IV Clinical Database Demo (PhysioNet, ODbL).</p>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+  <script src="/static/dashboard.js"></script>
+</body>
+</html>

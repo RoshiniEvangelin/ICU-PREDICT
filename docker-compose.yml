@@ -1,0 +1,14 @@
+# docker compose up --build            -> synthetic demo data
+# MIMIC_DIR=~/Downloads/mimic-iv-clinical-database-demo-2.2 docker compose up --build
+services:
+  icu-predict:
+    build: .
+    image: icu-predict:latest
+    ports:
+      - "8000:8000"
+    environment:
+      - RETRAIN=${RETRAIN:-0}
+    volumes:
+      - ./data:/app/data            # processed tables persist between runs
+      - ./outputs:/app/outputs      # trained models, reports, figures
+      - ${MIMIC_DIR:-./.no-mimic}:/data/mimic:ro
